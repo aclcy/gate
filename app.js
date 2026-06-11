@@ -117,8 +117,13 @@ function loadFaviconInPlace(imgEl, hostname, fallbackChar) {
 function showFallback(imgEl, fallbackChar) {
     if (fallbackChar && imgEl.parentNode) {
         const span = document.createElement('span');
-        span.className = 'clean-icon-char';
         span.textContent = fallbackChar || '?';
+        // 根据上下文使用不同样式：简洁模式用 clean-icon-char，书签列表用 bookmark-favicon-fallback
+        if (imgEl.closest && imgEl.closest('.clean-bookmark-icon')) {
+            span.className = 'clean-icon-char';
+        } else {
+            span.className = 'bookmark-favicon-fallback';
+        }
         imgEl.parentNode.replaceChild(span, imgEl);
     } else {
         imgEl.style.opacity = '0';
