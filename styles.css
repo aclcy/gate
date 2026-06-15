@@ -497,13 +497,57 @@ body {
     color: #333;
 }
 
-/* 认证界面 */
-#auth-container {
-    flex: 1;
+/* 登录/注册弹窗模态框 */
+.auth-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 40px 20px;
+}
+
+.auth-modal.hidden {
+    display: none !important;
+}
+
+.auth-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+}
+
+.auth-modal-close {
+    position: absolute;
+    top: -12px;
+    right: -12px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: #fff;
+    color: #666;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 1;
+    line-height: 1;
+    padding: 0;
+}
+
+.auth-modal-close:hover {
+    background: #f0f0f0;
+    color: #333;
 }
 
 .auth-wrapper {
@@ -512,6 +556,20 @@ body {
     align-items: center;
     width: 100%;
     max-width: 380px;
+    position: relative;
+    z-index: 1;
+    animation: authModalIn 0.2s ease-out;
+}
+
+@keyframes authModalIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
 }
 
 .auth-logo {
@@ -1504,6 +1562,18 @@ body {
         padding: 20px 16px;
     }
 
+    .auth-modal {
+        padding: 16px;
+    }
+
+    .auth-modal-close {
+        top: -8px;
+        right: -8px;
+        width: 28px;
+        height: 28px;
+        font-size: 18px;
+    }
+
     .modal-content {
         width: 95%;
         padding: 20px 16px;
@@ -2295,6 +2365,20 @@ body {
     background: rgba(255,255,255,0.05);
 }
 
+[data-theme="dark"] .auth-modal-overlay {
+    background: rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .auth-modal-close {
+    background: var(--bg-card);
+    color: var(--text-muted);
+}
+
+[data-theme="dark"] .auth-modal-close:hover {
+    background: #444;
+    color: #eee;
+}
+
 [data-theme="dark"] .auth-copyright {
     color: var(--text-muted);
 }
@@ -2774,19 +2858,7 @@ body {
     background: rgba(0,0,0,0.06);
 }
 
-
-/* 认证界面布局微调 */
-#auth-container {
-    height: 100vh;
-    height: 100dvh;
-    display: flex;
-}
-#auth-container.hidden {
-    display: none !important;
-}
-.auth-wrapper {
-    position: relative;
-}
+/* 认证弹窗微调 - 已由顶部 auth-modal 样式处理 */
 
 /* ================================================================
    浏览器界面暗色主题

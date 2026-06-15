@@ -73,11 +73,11 @@
 </head>
 <body>
     <div id="app">
-        <!-- 认证界面 -->
-        <div id="auth-container" class="hidden">
+        <!-- 登录/注册弹窗 -->
+        <div id="auth-container" class="auth-modal hidden">
+            <div class="auth-modal-overlay"></div>
             <div class="auth-wrapper">
-                <img class="auth-logo-img" src="favicon.png" alt="Mark Logo">
-                <h1 class="auth-logo">Mark</h1>
+                <button class="auth-modal-close" title="关闭">&times;</button>
                 <div class="auth-box">
                     <div class="auth-tabs">
                         <button id="login-tab" class="active">登录</button>
@@ -88,7 +88,7 @@
                         <input type="text" id="login-username" placeholder="用户名" required>
                         <input type="password" id="login-password" placeholder="密码" required>
                         <button type="submit">登录</button>
-                        <button type="button" class="auth-back-btn">返回主页</button>
+                        <button type="button" class="auth-back-btn">取消</button>
                     </form>
 
                     <form id="register-form" class="auth-form hidden">
@@ -99,7 +99,7 @@
                     </form>
                 </div>
                 <p class="auth-copyright">© 2026 Li Chengyan. All Rights Reserved.</p>
-                            <span class="auth-version">v3.1.1</span>
+                <span class="auth-version">v3.2.0</span>
             </div>
         </div>
 
@@ -110,7 +110,7 @@
                 <div class="nav-left">
                     <img class="nav-logo-img" src="favicon.png" alt="Mark Logo">
                     <h1 class="logo">Mark</h1>
-                    <span id="version-display" class="version-badge" title="点击查看更新日志">v3.1.1</span>
+                    <span id="version-display" class="version-badge" title="点击查看更新日志">v3.2.0</span>
                     <div class="nav-menu-wrapper">
                         <button id="nav-menu-btn" class="nav-menu-btn" title="菜单">...</button>
                         <div id="nav-menu-dropdown" class="dropdown-menu hidden">
@@ -231,6 +231,14 @@
                 <span class="close">&times;</span>
                 <div id="changelog-content">
                     <h2>更新日志</h2>
+                    <div class="changelog-entry">
+                        <h3>v3.2.0 - 2026年6月15日</h3>
+                        <ul>
+                            <li>登录/注册从跳转新页面改为弹窗模态框，主界面始终可见</li>
+                            <li>弹窗支持点击遮罩层或关闭按钮关闭，体验更流畅</li>
+                            <li>书签列表模式 favicon 加载失败时显示规范的占位图标，不再裸露文字</li>
+                        </ul>
+                    </div>
                     <div class="changelog-entry">
                         <h3>v3.1.1 - 2026年6月10日</h3>
                         <ul>

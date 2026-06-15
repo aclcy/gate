@@ -1992,11 +1992,25 @@ document.addEventListener('DOMContentLoaded', () => {
         loginForm.classList.add('hidden');
     });
 
-    // 返回主页按钮
+    // 取消/关闭登录弹窗
     const authBackBtn = document.querySelector('.auth-back-btn');
     if (authBackBtn) {
         authBackBtn.addEventListener('click', () => {
-            guestMode();
+            showMainContainer();
+        });
+    }
+
+    // 关闭按钮 & 点击遮罩层关闭弹窗
+    const authModalClose = document.querySelector('.auth-modal-close');
+    const authModalOverlay = document.querySelector('.auth-modal-overlay');
+    if (authModalClose) {
+        authModalClose.addEventListener('click', () => {
+            showMainContainer();
+        });
+    }
+    if (authModalOverlay) {
+        authModalOverlay.addEventListener('click', () => {
+            showMainContainer();
         });
     }
 
@@ -2417,12 +2431,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // 辅助函数
     function showAuthContainer() {
         authContainer.classList.remove('hidden');
-        mainContainer.classList.add('hidden');
     }
 
     function showMainContainer() {
         authContainer.classList.add('hidden');
-        mainContainer.classList.remove('hidden');
     }
 
     // 初始化默认文件夹（新用户无数据时创建"根文件夹"）
