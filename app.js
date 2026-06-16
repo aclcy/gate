@@ -187,6 +187,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let multiSelectMode = false;
     let selectedItems = []; // {type: 'folder'|'bookmark', item: ..., parentArray: ...}
 
+    // 拖拽排序状态
+    let dragState = null; // { items: [...], srcArray: [...] }
+
     // 初始化版本号显示
     const versionDisplay = document.getElementById('version-display');
     if (versionDisplay) {
@@ -2677,10 +2680,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderFolderTree() {
         folderTree.innerHTML = '';
 
-        // 渲染用户导入的文件夹树
+        // 渲染用户导入的文件夹树（parentArray 直接传 bookmarks，确保拖拽排序修改到原始数组）
         const topFolders = bookmarks.filter(item => item.type === 'folder');
         for (let i = 0; i < topFolders.length; i++) {
-            const childItem = renderFolderItem(topFolders[i], topFolders, i);
+            const childItem = renderFolderItem(topFolders[i], bookmarks, i);
             folderTree.appendChild(childItem);
         }
     }
@@ -2777,6 +2780,85 @@ document.addEventListener('DOMContentLoaded', () => {
             div.appendChild(subfolders);
         }
         
+        // 多选模式：侧边栏文件夹拖拽排序
+        if (multiSelectMode) {
+            div.setAttribute('draggable', 'true');
+            div.dataset.dragType = 'sidebar-folder';
+            div.dataset.dragRef = folder._dragId = folder._dragId || (Math.random().toString(36).slice(2));
+
+            div.addEventListener('dragstart', (e) => {
+                const isSelected = selectedItems.some(s => s.item === folder);
+                if (isSelected && selectedItems.length > 0) {
+                    // 拖整个选中集合（仅同一 parentArray 内的）
+                    dragState = {
+                        items: selectedItems.filter(s => s.parentArray === parentArray).map(s => s.item),
+                        srcArray: parentArray
+                    };
+                } else {
+                    dragState = { items: [folder], srcArray: parentArray };
+                }
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', 'sidebar-folder');
+                div.classList.add('drag-source');
+            });
+
+            div.addEventListener('dragend', () => {
+                div.classList.remove('drag-source');
+                document.querySelectorAll('.drag-over-top, .drag-over-bottom').forEach(el => {
+                    el.classList.remove('drag-over-top', 'drag-over-bottom');
+                });
+            });
+
+            div.addEventListener('dragover', (e) => {
+                if (!dragState || dragState.srcArray !== parentArray) return;
+                if (dragState.items.includes(folder)) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                const rect = div.getBoundingClientRect();
+                const mid = rect.top + rect.height / 2;
+                document.querySelectorAll('.drag-over-top, .drag-over-bottom').forEach(el => {
+                    el.classList.remove('drag-over-top', 'drag-over-bottom');
+                });
+                if (e.clientY < mid) {
+                    div.classList.add('drag-over-top');
+                } else {
+                    div.classList.add('drag-over-bottom');
+                }
+            });
+
+            div.addEventListener('dragleave', () => {
+                div.classList.remove('drag-over-top', 'drag-over-bottom');
+            });
+
+            div.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!dragState || dragState.srcArray !== parentArray) return;
+                if (dragState.items.includes(folder)) return;
+
+                const isTop = div.classList.contains('drag-over-top');
+                div.classList.remove('drag-over-top', 'drag-over-bottom');
+
+                const arr = parentArray;
+                // 从数组中移除被拖动的项
+                const dragged = dragState.items;
+                dragged.forEach(it => {
+                    const idx = arr.indexOf(it);
+                    if (idx !== -1) arr.splice(idx, 1);
+                });
+
+                // 找目标位置（移除后重新找）
+                let targetIdx = arr.indexOf(folder);
+                if (!isTop) targetIdx += 1;
+                if (targetIdx < 0) targetIdx = 0;
+                arr.splice(targetIdx, 0, ...dragged);
+
+                dragState = null;
+                renderFolderTree();
+                saveBookmarks();
+            });
+        }
+
         return div;
     }
 
@@ -2802,6 +2884,89 @@ document.addEventListener('DOMContentLoaded', () => {
         return folder.children.filter(item => item.type === 'bookmark');
     }
 
+    // ====== 拖拽排序（内容区：文件夹 + 书签） ======
+    function attachContentDrag(el, dataItem, arr) {
+        el.setAttribute('draggable', 'true');
+
+        el.addEventListener('dragstart', (e) => {
+            // 如果当前项已选中，则批量拖动选中项（同一 arr 内）
+            const isSelected = selectedItems.some(s => s.item === dataItem && s.parentArray === arr);
+            if (isSelected && selectedItems.length > 0) {
+                dragState = {
+                    items: selectedItems.filter(s => s.parentArray === arr).map(s => s.item),
+                    srcArray: arr
+                };
+            } else {
+                dragState = { items: [dataItem], srcArray: arr };
+            }
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', 'content-item');
+            el.classList.add('drag-source');
+            // 拖动期间半透明
+            setTimeout(() => { el.style.opacity = '0.4'; }, 0);
+        });
+
+        el.addEventListener('dragend', () => {
+            el.classList.remove('drag-source');
+            el.style.opacity = '';
+            document.querySelectorAll('.drag-over-top, .drag-over-bottom').forEach(node => {
+                node.classList.remove('drag-over-top', 'drag-over-bottom');
+            });
+        });
+
+        el.addEventListener('dragover', (e) => {
+            if (!dragState || dragState.srcArray !== arr) return;
+            if (dragState.items.includes(dataItem)) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const rect = el.getBoundingClientRect();
+            const mid = rect.top + rect.height / 2;
+            // 清除同区域其他高亮
+            el.closest('#bookmarks-list, #folder-tree') &&
+                el.closest('#bookmarks-list, #folder-tree')
+                    .querySelectorAll('.drag-over-top, .drag-over-bottom')
+                    .forEach(n => n.classList.remove('drag-over-top', 'drag-over-bottom'));
+            if (e.clientY < mid) {
+                el.classList.add('drag-over-top');
+            } else {
+                el.classList.add('drag-over-bottom');
+            }
+        });
+
+        el.addEventListener('dragleave', (e) => {
+            if (!el.contains(e.relatedTarget)) {
+                el.classList.remove('drag-over-top', 'drag-over-bottom');
+            }
+        });
+
+        el.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!dragState || dragState.srcArray !== arr) return;
+            if (dragState.items.includes(dataItem)) return;
+
+            const isTop = el.classList.contains('drag-over-top');
+            el.classList.remove('drag-over-top', 'drag-over-bottom');
+
+            const dragged = dragState.items;
+            // 移除原位置
+            dragged.forEach(it => {
+                const idx = arr.indexOf(it);
+                if (idx !== -1) arr.splice(idx, 1);
+            });
+            // 找目标位置
+            let targetIdx = arr.indexOf(dataItem);
+            if (!isTop) targetIdx += 1;
+            if (targetIdx < 0) targetIdx = 0;
+            arr.splice(targetIdx, 0, ...dragged);
+
+            dragState = null;
+            // 刷新内容区
+            updateBookmarksList(arr);
+            saveBookmarks();
+        });
+    }
+
     function updateBookmarksList(items, highlightKeyword) {
         bookmarksList.innerHTML = '';
 
@@ -2815,16 +2980,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const fragment = document.createDocumentFragment();
 
-        // 先渲染子文件夹（如果有）
-        const folders = items.filter(item => item.type === 'folder');
-        for (let i = 0; i < folders.length; i++) {
-            fragment.appendChild(renderContentFolderItem(folders[i]));
-        }
-
-        // 再渲染书签，传入 items 作为 parentArray（用于删除/插入定位）
-        const bookmarkArray = items.filter(item => item.type === 'bookmark');
-        for (let i = 0; i < bookmarkArray.length; i++) {
-            fragment.appendChild(renderBookmarkItem(bookmarkArray[i], items, highlightKeyword));
+        // 按 items 原始顺序渲染（支持拖拽混排，文件夹和书签可自由排列）
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            if (item.type === 'folder') {
+                fragment.appendChild(renderContentFolderItem(item, items));
+            } else if (item.type === 'bookmark') {
+                fragment.appendChild(renderBookmarkItem(item, items, highlightKeyword));
+            }
         }
 
         bookmarksList.appendChild(fragment);
@@ -3201,7 +3364,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 渲染内容区的子文件夹（可点击进入）
-    function renderContentFolderItem(folder) {
+    function renderContentFolderItem(folder, parentArray) {
         const div = document.createElement('div');
         div.className = 'content-folder-item';
 
@@ -3227,10 +3390,14 @@ document.addEventListener('DOMContentLoaded', () => {
             checkbox.className = 'select-checkbox';
             checkbox.addEventListener('click', (e) => {
                 e.stopPropagation();
-                toggleSelectItem('folder', folder, null, checkbox);
+                toggleSelectItem('folder', folder, parentArray || null, checkbox);
             });
             div.insertBefore(checkbox, div.firstChild);
             div.classList.add('multi-select-item');
+            // 多选模式：内容区文件夹拖拽排序
+            if (parentArray) {
+                attachContentDrag(div, folder, parentArray);
+            }
         }
 
         div.onclick = (e) => {
@@ -3320,6 +3487,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     e.preventDefault();
                 }
             });
+            // 多选模式：书签拖拽排序
+            if (parentArray) {
+                attachContentDrag(div, bookmark, parentArray);
+            }
         }
 
         // ====== 书签菜单栏 ======

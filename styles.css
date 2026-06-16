@@ -1665,6 +1665,37 @@ body {
     cursor: default;
 }
 
+/* 拖拽排序 */
+[draggable="true"].drag-source {
+    opacity: 0.4;
+}
+
+.drag-over-top {
+    border-top: 2px solid #4a90e2 !important;
+    position: relative;
+}
+
+.drag-over-bottom {
+    border-bottom: 2px solid #4a90e2 !important;
+    position: relative;
+}
+
+[draggable="true"]:not(.drag-source) {
+    cursor: grab;
+}
+
+[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+[data-theme="dark"] .drag-over-top {
+    border-top-color: #5aa3f0 !important;
+}
+
+[data-theme="dark"] .drag-over-bottom {
+    border-bottom-color: #5aa3f0 !important;
+}
+
 /* 文件夹选择器 */
 .folder-picker-content {
     max-width: 400px;
