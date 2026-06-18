@@ -1,5 +1,5 @@
 // 当前版本号 - 每次发布时自动更新
-const CURRENT_VERSION = 'v3.1.1';
+const CURRENT_VERSION = 'v3.2.3';
 
 // 搜索引擎定义
 const DEFAULT_ENGINES = [
@@ -27,6 +27,20 @@ function getEngineIconSVG(engineId, size) {
     if (cfg) {
         return '<img src="' + cfg[0] + '" width="' + s + '" height="' + s + '" style="border-radius:4px" alt="" onerror="this.outerHTML=\'<svg width=' + s + ' height=' + s + ' viewBox=0 0 24 24><rect width=24 height=24 rx=12 fill=' + cfg[2] + '/><text x=12 y=17 text-anchor=middle fill=white font-size=13 font-weight=bold font-family=Arial>' + cfg[1] + '</text></svg>\'">';
     }
+    // 自定义引擎：提取域名，通过 favicon 服务加载真实图标
+    try {
+        var customs = JSON.parse(localStorage.getItem('mark_custom_engines') || '[]');
+        var cEng = customs.find(function(e) { return e.id === engineId; });
+        if (cEng && cEng.searchUrl) {
+            var urlStr = cEng.searchUrl.replace('{q}', '');
+            var uObj = new URL(urlStr);
+            var hName = uObj.hostname;
+            var fChar = (cEng.name || '?').charAt(0).toUpperCase();
+            var fColor = cEng.color || '#666';
+            var fUrl = 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(hName) + '&sz=32';
+            return '<img src="' + fUrl + '" width="' + s + '" height="' + s + '" style="border-radius:4px" alt="" onerror="this.outerHTML=\'<svg width=' + s + ' height=' + s + ' viewBox=0 0 24 24><rect width=24 height=24 rx=12 fill=' + fColor + '/><text x=12 y=17 text-anchor=middle fill=white font-size=13 font-weight=bold font-family=Arial>' + fChar + '</text></svg>\'">';
+        }
+    } catch (e) {}
     return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24"><rect width="24" height="24" rx="12" fill="#666"/><text x="12" y="17" text-anchor="middle" fill="white" font-size="12" font-weight="bold" font-family="Arial">?</text></svg>';
 }
 
