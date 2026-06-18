@@ -583,9 +583,22 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!resp.ok) return;
             const data = await resp.json();
             if (data.success && data.preferences) {
-                // 加载自定义搜索引擎（云端覆盖本地，以云端为准）
+                // 加载自定义搜索引擎：合并云端与本地（云端为准，本地有而云端没有的也保留并同步）
+                const localCustoms = JSON.parse(localStorage.getItem('mark_custom_engines') || '[]');
                 if (Array.isArray(data.preferences.customEngines)) {
-                    localStorage.setItem('mark_custom_engines', JSON.stringify(data.preferences.customEngines));
+                    const cloudCustoms = data.preferences.customEngines;
+                    const cloudIds = new Set(cloudCustoms.map(e => e.id));
+                    // 本地独有（尚未同步）的引擎追加到云端列表
+                    const localOnly = localCustoms.filter(e => !cloudIds.has(e.id));
+                    const merged = [...cloudCustoms, ...localOnly];
+                    localStorage.setItem('mark_custom_engines', JSON.stringify(merged));
+                    // 如果有本地独有引擎，立即同步到云端
+                    if (localOnly.length > 0) {
+                        savePreference('customEngines', merged);
+                    }
+                } else if (localCustoms.length > 0) {
+                    // 云端没有记录但本地有，直接同步上去
+                    savePreference('customEngines', localCustoms);
                 }
                 if (data.preferences.currentEngine) {
                     localStorage.setItem('mark_engine', data.preferences.currentEngine);
@@ -723,12 +736,14 @@ document.addEventListener('DOMContentLoaded', () => {
         html += '</button>';
 
         searchEnginePicker.innerHTML = html;
+        searchEnginePicker.classList.remove('hidden');
         searchEnginePicker.classList.add('show');
     }
 
     function hideEnginePicker() {
         if (searchEnginePicker) {
             searchEnginePicker.classList.remove('show');
+            searchEnginePicker.classList.add('hidden');
         }
     }
 
