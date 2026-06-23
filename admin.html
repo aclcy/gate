@@ -396,6 +396,20 @@
         .engine-icon-cell { display: flex; align-items: center; gap: 8px; }
         .edit-engine-btn { background: #17a2b8; color: white; }
         .edit-engine-btn:hover { background: #138496; }
+
+        /* 拖拽排序 */
+        .drag-handle {
+            cursor: grab; color: #bbb; font-size: 16px; padding: 0 4px;
+            user-select: none; line-height: 1;
+        }
+        .drag-handle:active { cursor: grabbing; }
+        tr.dragging { opacity: 0.4; }
+        tr.drag-over { background: #f0f4ff !important; }
+        .badge-builtin {
+            display: inline-block; font-size: 10px; padding: 1px 5px;
+            background: #e8f4fd; color: #1a7abf; border-radius: 3px;
+            vertical-align: middle; margin-left: 4px;
+        }
     </style>
 <body>
     <!-- 密码验证界面 -->
@@ -919,29 +933,104 @@
                     container.innerHTML = '<div class="empty-state">暂无全局搜索引擎，点击右上角"+ 添加引擎"新增</div>';
                     return;
                 }
-                let html = `<table><thead><tr>
+                let html = `<table id="enginesTable"><thead><tr>
+                    <th style="width:32px;"></th>
                     <th style="width:48px;">图标</th>
                     <th>名称</th>
                     <th>搜索地址</th>
                     <th style="width:60px;">颜色</th>
                     <th>操作</th>
-                </tr></thead><tbody>`;
-                engines.forEach(eng => {
-                    html += `<tr>
-                        <td>${renderEngineIcon(eng, 28)}</td>
-                        <td>${escapeHtml(eng.name)}</td>
-                        <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#888;">${escapeHtml(eng.searchUrl)}</td>
+                </tr></thead><tbody id="enginesTbody">`;
+                engines.forEach((eng, idx) => {
+                    const isBuiltin = eng.isBuiltin ? 'true' : 'false';
+                    const builtinBadge = eng.isBuiltin ? '<span class="badge-builtin">内置</span>' : '';
+                    const deleteBtn = eng.isBuiltin
+                        ? '<button class="action-btn" style="background:#ccc;color:#888;cursor:not-allowed;" disabled title="内置引擎不可删除">删除</button>'
+                        : `<button class="action-btn delete-btn" onclick="deleteGlobalEngine('${escapeHtml(eng.id)}', '${escapeHtml(eng.name)}')">删除</button>`;
+                    const iconCell = eng.searchUrl ? renderEngineIcon(eng, 28) : '<span style="font-size:18px;">🔖</span>';
+                    html += `<tr draggable="true" data-id="${escapeHtml(eng.id)}" data-idx="${idx}">
+                        <td class="drag-handle" title="拖拽排序">⠿</td>
+                        <td>${iconCell}</td>
+                        <td>${escapeHtml(eng.name)}${builtinBadge}</td>
+                        <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#888;">${escapeHtml(eng.searchUrl || '—')}</td>
                         <td><span class="engine-color-dot" style="background:${escapeHtml(eng.color||'#666')};"></span></td>
                         <td>
-                            <button class="action-btn edit-engine-btn" onclick="openEngineModal('${escapeHtml(eng.id)}', '${escapeHtml(eng.name)}', '${escapeHtml(eng.searchUrl)}', '${escapeHtml(eng.color||'#666')}')">编辑</button>
-                            <button class="action-btn delete-btn" onclick="deleteGlobalEngine('${escapeHtml(eng.id)}', '${escapeHtml(eng.name)}')">删除</button>
+                            <button class="action-btn edit-engine-btn" onclick="openEngineModal('${escapeHtml(eng.id)}', '${escapeHtml(eng.name)}', '${escapeHtml(eng.searchUrl||'')}', '${escapeHtml(eng.color||'#666')}')">编辑</button>
+                            ${deleteBtn}
                         </td>
                     </tr>`;
                 });
                 html += '</tbody></table>';
                 container.innerHTML = html;
+                initDragSort();
             } catch (err) {
                 container.innerHTML = '<div class="empty-state">加载失败</div>';
+            }
+        }
+
+        // 拖拽排序初始化
+        function initDragSort() {
+            const tbody = document.getElementById('enginesTbody');
+            if (!tbody) return;
+            let dragSrc = null;
+
+            tbody.querySelectorAll('tr').forEach(function(row) {
+                row.addEventListener('dragstart', function(e) {
+                    dragSrc = this;
+                    this.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+                row.addEventListener('dragend', function() {
+                    this.classList.remove('dragging');
+                    tbody.querySelectorAll('tr').forEach(function(r) { r.classList.remove('drag-over'); });
+                });
+                row.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    if (this !== dragSrc) {
+                        tbody.querySelectorAll('tr').forEach(function(r) { r.classList.remove('drag-over'); });
+                        this.classList.add('drag-over');
+                    }
+                });
+                row.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    if (this === dragSrc) return;
+                    const rows = Array.from(tbody.querySelectorAll('tr'));
+                    const srcIdx = rows.indexOf(dragSrc);
+                    const dstIdx = rows.indexOf(this);
+                    if (srcIdx < dstIdx) {
+                        tbody.insertBefore(dragSrc, this.nextSibling);
+                    } else {
+                        tbody.insertBefore(dragSrc, this);
+                    }
+                    this.classList.remove('drag-over');
+                    saveEngineOrder();
+                });
+            });
+        }
+
+        // 保存新的引擎顺序
+        async function saveEngineOrder() {
+            const tbody = document.getElementById('enginesTbody');
+            if (!tbody || !adminPwd) return;
+            // 从当前 DOM 顺序收集引擎 id
+            const ids = Array.from(tbody.querySelectorAll('tr')).map(function(r) { return r.dataset.id; });
+            // 拉取最新引擎数据，按新 id 顺序排列
+            try {
+                const res = await fetch('/api/global-engines');
+                const data = await res.json();
+                const engines = data.engines || [];
+                const engineMap = {};
+                engines.forEach(function(e) { engineMap[e.id] = e; });
+                const reordered = ids.map(function(id) { return engineMap[id]; }).filter(Boolean);
+                await fetch('/api/admin/global-engines/reorder', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: adminPwd, engines: reordered })
+                });
+                // 成功后不刷新DOM，避免打断连续拖拽
+            } catch (err) {
+                console.error('保存顺序失败', err);
             }
         }
 

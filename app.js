@@ -1,5 +1,5 @@
 // 当前版本号 - 每次发布时自动更新
-const CURRENT_VERSION = 'v3.2.4';
+const CURRENT_VERSION = 'v3.2.5';
 
 // 搜索引擎定义
 const DEFAULT_ENGINES = [
@@ -16,20 +16,9 @@ function getEngineIconSVG(engineId, size) {
     if (engineId === 'bookmark') {
         return '<img src="favicon.png" width="' + s + '" height="' + s + '" style="border-radius:4px" alt="Mark">';
     }
-    const icons = {
-        baidu: ['https://www.baidu.com/favicon.ico', 'B', '#2932E1'],
-        bing: ['https://www.bing.com/favicon.ico', 'b', '#008373'],
-        sogou: ['https://www.sogou.com/favicon.ico', 'S', '#FF4F01'],
-        so360: ['https://www.so.com/favicon.ico', '3', '#40BA21'],
-        metaso: ['https://metaso.cn/favicon.ico', 'M', '#6C5CE7']
-    };
-    const cfg = icons[engineId];
-    if (cfg) {
-        return '<img src="' + cfg[0] + '" width="' + s + '" height="' + s + '" style="border-radius:4px" alt="" onerror="this.outerHTML=\'<svg width=' + s + ' height=' + s + ' viewBox=0 0 24 24><rect width=24 height=24 rx=12 fill=' + cfg[2] + '/><text x=12 y=17 text-anchor=middle fill=white font-size=13 font-weight=bold font-family=Arial>' + cfg[1] + '</text></svg>\'">';
-    }
-    // 自定义引擎 & 全局引擎：提取域名，走服务端 favicon 代理（与书签图标同一逻辑）
+    // 统一走全局引擎列表查找（包含内置引擎和管理员添加引擎）
     try {
-        var allDynamic = (typeof GLOBAL_ENGINES !== 'undefined' ? GLOBAL_ENGINES : [])
+        var allDynamic = (typeof GLOBAL_ENGINES !== 'undefined' ? GLOBAL_ENGINES : DEFAULT_ENGINES.filter(function(e){ return e.id !== 'bookmark'; }))
             .concat(JSON.parse(localStorage.getItem('mark_custom_engines') || '[]'));
         var cEng = allDynamic.find(function(e) { return e.id === engineId; });
         if (cEng && cEng.searchUrl) {
@@ -150,8 +139,15 @@ let GLOBAL_ENGINES = [];
 
 function getAllEngines() {
     const customs = JSON.parse(localStorage.getItem('mark_custom_engines') || '[]');
-    // 顺序：默认内置 → 管理员全局 → 用户自定义
-    return [...DEFAULT_ENGINES, ...GLOBAL_ENGINES, ...customs];
+    // 服务端返回全局引擎时（包含内置+管理员添加），以服务端顺序为准
+    // 服务端不可达时 fallback 到 DEFAULT_ENGINES
+    const base = (typeof GLOBAL_ENGINES !== 'undefined' && GLOBAL_ENGINES.length > 0)
+        ? GLOBAL_ENGINES
+        : DEFAULT_ENGINES;
+    // 用户自定义引擎追加到末尾（去重：不覆盖同ID的全局引擎）
+    const baseIds = new Set(base.map(function(e) { return e.id; }));
+    const uniqueCustoms = customs.filter(function(e) { return !baseIds.has(e.id); });
+    return [...base, ...uniqueCustoms];
 }
 
 // 拉取全局引擎并刷新图标/选择器
