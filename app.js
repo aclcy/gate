@@ -1,5 +1,5 @@
 // 当前版本号 - 每次发布时自动更新
-const CURRENT_VERSION = 'v3.2.7';
+const CURRENT_VERSION = 'v3.2.8';
 
 // 搜索引擎定义
 const DEFAULT_ENGINES = [
@@ -747,14 +747,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateEngineIcon() {
         const engine = getCurrentEngine();
         if (searchEngineBtn) {
-            searchEngineBtn.innerHTML = getEngineIconSVG(engine.id, 22);
+            searchEngineBtn.innerHTML = getEngineIconSVG(engine.id, 28);
         }
         if (searchInput) {
             const t = i18n[currentLang];
             searchInput.placeholder = isBookmarkMode() ? t.searchBookmark : t.searchPlaceholder;
         }
         if (cleanSearchEngineBtn) {
-            cleanSearchEngineBtn.innerHTML = getEngineIconSVG(engine.id, 22);
+            cleanSearchEngineBtn.innerHTML = getEngineIconSVG(engine.id, 28);
         }
         if (cleanSearchInput) {
             const t = i18n[currentLang];
