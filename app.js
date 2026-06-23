@@ -1,5 +1,5 @@
 // 当前版本号 - 每次发布时自动更新
-const CURRENT_VERSION = 'v3.2.6';
+const CURRENT_VERSION = 'v3.2.7';
 
 // 搜索引擎定义
 const DEFAULT_ENGINES = [
@@ -15,6 +15,11 @@ function getEngineIconSVG(engineId, size) {
     const s = size || 20;
     if (engineId === 'bookmark') {
         return '<img src="favicon.png" width="' + s + '" height="' + s + '" style="border-radius:4px" alt="Mark">';
+    }
+    // 必应：直接使用其 favicon URL（代理抓取不稳定）
+    if (engineId === 'bing') {
+        return '<img src="https://www.bing.com/favicon.ico" width="' + s + '" height="' + s + '" style="border-radius:4px" alt="" '
+            + 'onerror="this.outerHTML=\'<svg width=' + s + ' height=' + s + ' viewBox=0 0 24 24><rect width=24 height=24 rx=12 fill=%23008373/><text x=12 y=17 text-anchor=middle fill=white font-size=13 font-weight=bold font-family=Arial>b</text></svg>\'">';
     }
     // 1. 优先从全局引擎列表（服务端下发，含内置+管理员添加）查找
     // 2. 找不到时从 DEFAULT_ENGINES 查找（服务端未返回时的兜底）

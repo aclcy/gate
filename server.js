@@ -522,12 +522,12 @@ app.get('/admin', (req, res) => {
 
 // 内置引擎默认值（首次初始化时写入数据库，管理员可编辑排序但不可删除）
 const DEFAULT_ENGINES_SEED = [
-    { id: 'bookmark', name: '书签搜索', searchUrl: null, color: '#2c3e50', isBuiltin: true },
-    { id: 'bing',    name: '必应',      searchUrl: 'https://www.bing.com/search?q={q}',      color: '#008373', isBuiltin: true },
-    { id: 'baidu',   name: '百度',      searchUrl: 'https://www.baidu.com/s?wd={q}',         color: '#2932E1', isBuiltin: true },
-    { id: 'sogou',   name: '搜狗',      searchUrl: 'https://www.sogou.com/web?query={q}',    color: '#FF4F01', isBuiltin: true },
-    { id: 'so360',   name: '360搜索',   searchUrl: 'https://www.so.com/s?q={q}',             color: '#40BA21', isBuiltin: true },
-    { id: 'metaso',  name: '秘塔AI',    searchUrl: 'https://metaso.cn/?q={q}',               color: '#6C5CE7', isBuiltin: true },
+    { id: 'bookmark', name: '书签搜索', searchUrl: null,                                     color: '#2c3e50', isBuiltin: true  },
+    { id: 'bing',     name: '必应',     searchUrl: 'https://www.bing.com/search?q={q}',      color: '#008373', isBuiltin: true  },
+    { id: 'baidu',    name: '百度',     searchUrl: 'https://www.baidu.com/s?wd={q}',         color: '#2932E1', isBuiltin: false },
+    { id: 'sogou',    name: '搜狗',     searchUrl: 'https://www.sogou.com/web?query={q}',    color: '#FF4F01', isBuiltin: false },
+    { id: 'so360',    name: '360搜索',  searchUrl: 'https://www.so.com/s?q={q}',             color: '#40BA21', isBuiltin: false },
+    { id: 'metaso',   name: '秘塔AI',   searchUrl: 'https://metaso.cn/?q={q}',               color: '#6C5CE7', isBuiltin: false },
 ];
 
 // 初始化全局引擎（首次部署时写入内置引擎）
@@ -542,18 +542,29 @@ async function initGlobalEngines() {
             );
             console.log('Default engines seeded to global_engines');
         } else {
-            // 已有数据：检查是否缺少内置引擎，补齐到列表头部（保持原有自定义引擎不变）
+            // 已有数据：补齐缺失的内置引擎，并同步更新已有引擎的 isBuiltin 字段
             let existing = JSON.parse(result.rows[0].value);
             const existingIds = new Set(existing.map(e => e.id));
             const missing = DEFAULT_ENGINES_SEED.filter(e => !existingIds.has(e.id));
-            if (missing.length > 0) {
-                // 内置引擎放最前面，原有引擎（包括自定义）追加在后
+            // 同步 isBuiltin 字段（确保升级后旧数据的 isBuiltin 状态正确）
+            const builtinMap = {};
+            DEFAULT_ENGINES_SEED.forEach(e => { builtinMap[e.id] = e.isBuiltin; });
+            let changed = missing.length > 0;
+            existing = existing.map(e => {
+                if (e.id in builtinMap && e.isBuiltin !== builtinMap[e.id]) {
+                    changed = true;
+                    return { ...e, isBuiltin: builtinMap[e.id] };
+                }
+                return e;
+            });
+            if (changed) {
+                // 补齐的内置引擎放到列表头部
                 const merged = [...missing, ...existing];
                 await pool.query(
                     "INSERT INTO admin_settings (key, value) VALUES ('global_engines', $1) ON CONFLICT (key) DO UPDATE SET value = $1",
                     [JSON.stringify(merged)]
                 );
-                console.log(`Seeded ${missing.length} missing built-in engines to global_engines`);
+                console.log(`Global engines updated: ${missing.length} added, isBuiltin fields synced`);
             }
         }
     } catch (err) {

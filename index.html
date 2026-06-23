@@ -99,7 +99,7 @@
                     </form>
                 </div>
                 <p class="auth-copyright">© 2026 Li Chengyan. All Rights Reserved.</p>
-                <span class="auth-version">v3.2.6</span>
+                                <span class="auth-version">v3.2.7</span>
             </div>
         </div>
 
@@ -110,7 +110,7 @@
                 <div class="nav-left">
                     <img class="nav-logo-img" src="favicon.png" alt="Mark Logo">
                     <h1 class="logo">Mark</h1>
-                    <span id="version-display" class="version-badge" title="点击查看更新日志">v3.2.6</span>
+                    <span id="version-display" class="version-badge" title="点击查看更新日志">v3.2.7</span>
                     <div class="nav-menu-wrapper">
                         <button id="nav-menu-btn" class="nav-menu-btn" title="菜单">...</button>
                         <div id="nav-menu-dropdown" class="dropdown-menu hidden">
@@ -231,6 +231,14 @@
                 <span class="close">&times;</span>
                 <div id="changelog-content">
                     <h2>更新日志</h2>
+                    <div class="changelog-entry">
+                        <h3>v3.2.7 - 2026年6月23日</h3>
+                        <ul>
+                            <li>修复必应搜索引擎图标不显示问题（改为直连必应 favicon，不再走代理）</li>
+                            <li>调整内置引擎范围：仅书签搜索和必应为不可删除的内置引擎，其他引擎（百度、搜狗等）均可在管理后台删除</li>
+                            <li>修复升级部署后旧数据 isBuiltin 字段未同步的问题</li>
+                        </ul>
+                    </div>
                     <div class="changelog-entry">
                         <h3>v3.2.6 - 2026年6月23日</h3>
                         <ul>
