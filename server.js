@@ -518,6 +518,98 @@ app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
+// ====== 全局搜索引擎管理 ======
+
+// 公开接口：所有用户获取全局引擎列表
+app.get('/api/global-engines', async (req, res) => {
+    try {
+        const result = await pool.query("SELECT value FROM admin_settings WHERE key = 'global_engines'");
+        const engines = result.rows.length > 0 ? JSON.parse(result.rows[0].value) : [];
+        res.json({ success: true, engines });
+    } catch (err) {
+        console.error('Get global engines error:', err);
+        res.json({ success: true, engines: [] });
+    }
+});
+
+// 管理员接口：新增全局引擎
+app.post('/api/admin/global-engines', async (req, res) => {
+    const { password, name, searchUrl, color } = req.body;
+    if (!password || !name || !searchUrl) {
+        return res.status(400).json({ error: '参数不完整' });
+    }
+    const valid = await bcrypt.compare(password, adminPassword);
+    if (!valid) return res.status(403).json({ error: '管理员密码错误' });
+    if (!searchUrl.includes('{q}')) {
+        return res.status(400).json({ error: '搜索地址必须包含 {q}' });
+    }
+    try {
+        const result = await pool.query("SELECT value FROM admin_settings WHERE key = 'global_engines'");
+        const engines = result.rows.length > 0 ? JSON.parse(result.rows[0].value) : [];
+        const id = 'global_' + Date.now();
+        engines.push({ id, name, searchUrl, color: color || '#666' });
+        await pool.query(
+            "INSERT INTO admin_settings (key, value) VALUES ('global_engines', $1) ON CONFLICT (key) DO UPDATE SET value = $1",
+            [JSON.stringify(engines)]
+        );
+        res.json({ success: true, engines });
+    } catch (err) {
+        console.error('Add global engine error:', err);
+        res.status(500).json({ error: '添加失败' });
+    }
+});
+
+// 管理员接口：修改全局引擎
+app.put('/api/admin/global-engines/:id', async (req, res) => {
+    const { password, name, searchUrl, color } = req.body;
+    const { id } = req.params;
+    if (!password) return res.status(400).json({ error: '缺少密码' });
+    const valid = await bcrypt.compare(password, adminPassword);
+    if (!valid) return res.status(403).json({ error: '管理员密码错误' });
+    try {
+        const result = await pool.query("SELECT value FROM admin_settings WHERE key = 'global_engines'");
+        let engines = result.rows.length > 0 ? JSON.parse(result.rows[0].value) : [];
+        const idx = engines.findIndex(e => e.id === id);
+        if (idx === -1) return res.status(404).json({ error: '引擎不存在' });
+        if (name) engines[idx].name = name;
+        if (searchUrl) {
+            if (!searchUrl.includes('{q}')) return res.status(400).json({ error: '搜索地址必须包含 {q}' });
+            engines[idx].searchUrl = searchUrl;
+        }
+        if (color) engines[idx].color = color;
+        await pool.query(
+            "INSERT INTO admin_settings (key, value) VALUES ('global_engines', $1) ON CONFLICT (key) DO UPDATE SET value = $1",
+            [JSON.stringify(engines)]
+        );
+        res.json({ success: true, engines });
+    } catch (err) {
+        console.error('Update global engine error:', err);
+        res.status(500).json({ error: '修改失败' });
+    }
+});
+
+// 管理员接口：删除全局引擎
+app.delete('/api/admin/global-engines/:id', async (req, res) => {
+    const { password } = req.body;
+    const { id } = req.params;
+    if (!password) return res.status(400).json({ error: '缺少密码' });
+    const valid = await bcrypt.compare(password, adminPassword);
+    if (!valid) return res.status(403).json({ error: '管理员密码错误' });
+    try {
+        const result = await pool.query("SELECT value FROM admin_settings WHERE key = 'global_engines'");
+        let engines = result.rows.length > 0 ? JSON.parse(result.rows[0].value) : [];
+        engines = engines.filter(e => e.id !== id);
+        await pool.query(
+            "INSERT INTO admin_settings (key, value) VALUES ('global_engines', $1) ON CONFLICT (key) DO UPDATE SET value = $1",
+            [JSON.stringify(engines)]
+        );
+        res.json({ success: true, engines });
+    } catch (err) {
+        console.error('Delete global engine error:', err);
+        res.status(500).json({ error: '删除失败' });
+    }
+});
+
 // ====== 分享功能 ======
 
 // 已知路由列表，避免分享短码冲突

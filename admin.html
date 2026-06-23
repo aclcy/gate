@@ -356,8 +356,47 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* 搜索引擎管理 */
+        .engine-icon-preview {
+            width: 28px; height: 28px;
+            border-radius: 6px; object-fit: cover; vertical-align: middle;
+        }
+        .engine-color-dot {
+            display: inline-block; width: 14px; height: 14px;
+            border-radius: 50%; vertical-align: middle; margin-right: 6px;
+            border: 1px solid rgba(0,0,0,.1);
+        }
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%; background: rgba(0,0,0,0.5);
+            z-index: 200; align-items: center; justify-content: center;
+        }
+        .modal-box {
+            background: white; border-radius: 12px; padding: 28px 32px;
+            width: 90%; max-width: 420px;
+        }
+        .modal-box h3 { margin-bottom: 18px; color: #333; font-size: 1rem; }
+        .modal-box label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; margin-top: 12px; }
+        .modal-box input[type="text"] {
+            width: 100%; padding: 8px 12px;
+            border: 1px solid #e0e0e0; border-radius: 6px;
+            font-size: 14px; outline: none; box-sizing: border-box;
+        }
+        .modal-box input[type="color"] {
+            width: 100%; height: 36px; padding: 2px 4px; cursor: pointer;
+            border: 1px solid #e0e0e0; border-radius: 6px; box-sizing: border-box;
+        }
+        .modal-box input:focus { border-color: #667eea; }
+        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+        .modal-actions button { padding: 8px 18px; border-radius: 6px; font-size: 14px; cursor: pointer; border: none; }
+        .btn-cancel { background: #f5f5f5; color: #555; border: 1px solid #e0e0e0 !important; }
+        .btn-confirm { background: #667eea; color: white; }
+        .btn-confirm:hover { background: #5a6fd6; }
+        .engine-icon-cell { display: flex; align-items: center; gap: 8px; }
+        .edit-engine-btn { background: #17a2b8; color: white; }
+        .edit-engine-btn:hover { background: #138496; }
     </style>
-</head>
 <body>
     <!-- 密码验证界面 -->
     <div id="authPanel" class="auth-panel">
@@ -430,6 +469,20 @@
                 <div class="loading">加载中...</div>
             </div>
         </div>
+
+        <!-- 搜索引擎管理 -->
+        <div class="table-container" style="margin-top:20px;">
+            <div class="table-header">
+                <h2>全局搜索引擎管理</h2>
+                <div class="header-actions">
+                    <button class="refresh-btn" onclick="openEngineModal()">+ 添加引擎</button>
+                    <button class="refresh-btn" onclick="loadGlobalEngines()">刷新</button>
+                </div>
+            </div>
+            <div id="enginesContainer">
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
     </div>
 
     <!-- 修改管理员密码模态框 -->
@@ -445,8 +498,32 @@
         </div>
     </div>
 
+    <!-- 搜索引擎添加/编辑模态框 -->
+    <div id="engineModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 id="engineModalTitle">添加搜索引擎</h3>
+            <input type="hidden" id="engineEditId">
+            <label>引擎名称 *</label>
+            <input type="text" id="engineName" placeholder="例：谷歌">
+            <label>搜索地址 * <span style="color:#999;font-size:12px;">（用 {q} 代替关键词）</span></label>
+            <input type="text" id="engineUrl" placeholder="例：https://www.google.com/search?q={q}">
+            <label>主题色</label>
+            <input type="color" id="engineColor" value="#667eea">
+            <label style="margin-top:12px;display:flex;align-items:center;gap:8px;">
+                图标预览
+                <img id="engineIconPreview" class="engine-icon-preview" src="" alt="" style="display:none;">
+                <span id="engineIconFallback" style="display:none;width:28px;height:28px;border-radius:6px;background:#ddd;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:bold;color:#555;"></span>
+            </label>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeEngineModal()">取消</button>
+                <button class="btn-confirm" onclick="saveEngine()">保存</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let selectedUserIds = new Set();
+        let adminPwd = ''; // 登录后缓存，供全局引擎 API 使用
 
         // 管理员密码验证
         async function verifyAdmin() {
@@ -460,12 +537,14 @@
                 });
                 const data = await res.json();
                 if (data.success) {
+                    adminPwd = password;
                     document.getElementById('authPanel').classList.add('hidden');
                     document.getElementById('adminContainer').classList.remove('hidden');
                     document.body.style.alignItems = 'flex-start';
                     loadUsers();
                     loadRegLimit();
                     loadShares();
+                    loadGlobalEngines();
                 } else {
                     errorEl.textContent = data.error || '密码错误';
                 }
@@ -809,6 +888,163 @@
                 await fetch(`/api/admin/shares/${id}`, { method: 'DELETE' });
             }
             loadShares();
+        }
+
+        // ====== 全局搜索引擎管理 ======
+
+        function getEngineHostname(url) {
+            try {
+                return new URL(url.replace('{q}', '')).hostname;
+            } catch (e) { return ''; }
+        }
+
+        function renderEngineIcon(eng, size) {
+            size = size || 28;
+            const hostname = getEngineHostname(eng.searchUrl || '');
+            if (!hostname) return '';
+            return `<img src="/api/favicon/${encodeURIComponent(hostname)}" width="${size}" height="${size}"
+                style="border-radius:6px;vertical-align:middle;"
+                onerror="this.outerHTML='<span style=\\'display:inline-flex;width:${size}px;height:${size}px;border-radius:6px;background:${eng.color || '#666'};color:white;align-items:center;justify-content:center;font-size:14px;font-weight:bold;\\'>${(eng.name||'?').charAt(0).toUpperCase()}</span>'"
+            >`;
+        }
+
+        async function loadGlobalEngines() {
+            const container = document.getElementById('enginesContainer');
+            container.innerHTML = '<div class="loading" style="color:#555;">加载中...</div>';
+            try {
+                const res = await fetch('/api/global-engines');
+                const data = await res.json();
+                const engines = data.engines || [];
+                if (engines.length === 0) {
+                    container.innerHTML = '<div class="empty-state">暂无全局搜索引擎，点击右上角"+ 添加引擎"新增</div>';
+                    return;
+                }
+                let html = `<table><thead><tr>
+                    <th style="width:48px;">图标</th>
+                    <th>名称</th>
+                    <th>搜索地址</th>
+                    <th style="width:60px;">颜色</th>
+                    <th>操作</th>
+                </tr></thead><tbody>`;
+                engines.forEach(eng => {
+                    html += `<tr>
+                        <td>${renderEngineIcon(eng, 28)}</td>
+                        <td>${escapeHtml(eng.name)}</td>
+                        <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#888;">${escapeHtml(eng.searchUrl)}</td>
+                        <td><span class="engine-color-dot" style="background:${escapeHtml(eng.color||'#666')};"></span></td>
+                        <td>
+                            <button class="action-btn edit-engine-btn" onclick="openEngineModal('${escapeHtml(eng.id)}', '${escapeHtml(eng.name)}', '${escapeHtml(eng.searchUrl)}', '${escapeHtml(eng.color||'#666')}')">编辑</button>
+                            <button class="action-btn delete-btn" onclick="deleteGlobalEngine('${escapeHtml(eng.id)}', '${escapeHtml(eng.name)}')">删除</button>
+                        </td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            } catch (err) {
+                container.innerHTML = '<div class="empty-state">加载失败</div>';
+            }
+        }
+
+        function openEngineModal(id, name, url, color) {
+            document.getElementById('engineModalTitle').textContent = id ? '编辑搜索引擎' : '添加搜索引擎';
+            document.getElementById('engineEditId').value = id || '';
+            document.getElementById('engineName').value = name || '';
+            document.getElementById('engineUrl').value = url || '';
+            document.getElementById('engineColor').value = color || '#667eea';
+            updateEnginePreview();
+            document.getElementById('engineModal').style.display = 'flex';
+        }
+
+        function closeEngineModal() {
+            document.getElementById('engineModal').style.display = 'none';
+        }
+
+        function updateEnginePreview() {
+            const url = document.getElementById('engineUrl').value;
+            const name = document.getElementById('engineName').value;
+            const color = document.getElementById('engineColor').value;
+            const preview = document.getElementById('engineIconPreview');
+            const fallback = document.getElementById('engineIconFallback');
+            const hostname = getEngineHostname(url);
+            if (hostname) {
+                preview.src = '/api/favicon/' + encodeURIComponent(hostname);
+                preview.style.display = 'inline-block';
+                fallback.style.display = 'none';
+                preview.onerror = function() {
+                    preview.style.display = 'none';
+                    fallback.style.display = 'flex';
+                    fallback.textContent = (name || '?').charAt(0).toUpperCase();
+                    fallback.style.background = color;
+                };
+            } else {
+                preview.style.display = 'none';
+                fallback.style.display = name ? 'flex' : 'none';
+                fallback.textContent = (name || '?').charAt(0).toUpperCase();
+                fallback.style.background = color;
+            }
+        }
+
+        document.getElementById('engineUrl').addEventListener('input', updateEnginePreview);
+        document.getElementById('engineName').addEventListener('input', updateEnginePreview);
+        document.getElementById('engineColor').addEventListener('input', updateEnginePreview);
+        document.getElementById('engineModal').addEventListener('click', function(e) {
+            if (e.target === this) closeEngineModal();
+        });
+
+        async function saveEngine() {
+            const id = document.getElementById('engineEditId').value;
+            const name = document.getElementById('engineName').value.trim();
+            const searchUrl = document.getElementById('engineUrl').value.trim();
+            const color = document.getElementById('engineColor').value;
+            if (!name || !searchUrl) { alert('请填写名称和搜索地址'); return; }
+            if (!searchUrl.includes('{q}')) { alert('搜索地址必须包含 {q}'); return; }
+            if (!adminPwd) { alert('请重新登录管理后台'); return; }
+
+            try {
+                let res;
+                if (id) {
+                    res = await fetch(`/api/admin/global-engines/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ password: adminPwd, name, searchUrl, color })
+                    });
+                } else {
+                    res = await fetch('/api/admin/global-engines', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ password: adminPwd, name, searchUrl, color })
+                    });
+                }
+                const data = await res.json();
+                if (data.success) {
+                    closeEngineModal();
+                    loadGlobalEngines();
+                } else {
+                    alert(data.error || '保存失败');
+                }
+            } catch (err) {
+                alert('网络错误');
+            }
+        }
+
+        async function deleteGlobalEngine(id, name) {
+            if (!confirm(`确定要删除搜索引擎 "${name}" 吗？\n此操作将对所有用户生效。`)) return;
+            if (!adminPwd) { alert('请重新登录管理后台'); return; }
+            try {
+                const res = await fetch(`/api/admin/global-engines/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: adminPwd })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    loadGlobalEngines();
+                } else {
+                    alert(data.error || '删除失败');
+                }
+            } catch (err) {
+                alert('网络错误');
+            }
         }
     </script>
 </body>

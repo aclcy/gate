@@ -1,5 +1,5 @@
 // 当前版本号 - 每次发布时自动更新
-const CURRENT_VERSION = 'v3.2.3';
+const CURRENT_VERSION = 'v3.2.4';
 
 // 搜索引擎定义
 const DEFAULT_ENGINES = [
@@ -27,10 +27,11 @@ function getEngineIconSVG(engineId, size) {
     if (cfg) {
         return '<img src="' + cfg[0] + '" width="' + s + '" height="' + s + '" style="border-radius:4px" alt="" onerror="this.outerHTML=\'<svg width=' + s + ' height=' + s + ' viewBox=0 0 24 24><rect width=24 height=24 rx=12 fill=' + cfg[2] + '/><text x=12 y=17 text-anchor=middle fill=white font-size=13 font-weight=bold font-family=Arial>' + cfg[1] + '</text></svg>\'">';
     }
-    // 自定义引擎：提取域名，走服务端 favicon 代理（与书签图标同一逻辑）
+    // 自定义引擎 & 全局引擎：提取域名，走服务端 favicon 代理（与书签图标同一逻辑）
     try {
-        var customs = JSON.parse(localStorage.getItem('mark_custom_engines') || '[]');
-        var cEng = customs.find(function(e) { return e.id === engineId; });
+        var allDynamic = (typeof GLOBAL_ENGINES !== 'undefined' ? GLOBAL_ENGINES : [])
+            .concat(JSON.parse(localStorage.getItem('mark_custom_engines') || '[]'));
+        var cEng = allDynamic.find(function(e) { return e.id === engineId; });
         if (cEng && cEng.searchUrl) {
             var urlStr = cEng.searchUrl.replace('{q}', '');
             var uObj = new URL(urlStr);
@@ -144,9 +145,28 @@ function showFallback(imgEl, fallbackChar) {
     }
 }
 
+// 全局引擎（由服务端管理，启动时异步拉取）
+let GLOBAL_ENGINES = [];
+
 function getAllEngines() {
     const customs = JSON.parse(localStorage.getItem('mark_custom_engines') || '[]');
-    return [...DEFAULT_ENGINES, ...customs];
+    // 顺序：默认内置 → 管理员全局 → 用户自定义
+    return [...DEFAULT_ENGINES, ...GLOBAL_ENGINES, ...customs];
+}
+
+// 拉取全局引擎并刷新图标/选择器
+function fetchGlobalEngines() {
+    fetch('/api/global-engines')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success && Array.isArray(data.engines) && data.engines.length > 0) {
+                GLOBAL_ENGINES = data.engines;
+                // 刷新当前搜索引擎图标（全局引擎可能是当前选中引擎）
+                if (typeof updateEngineIcon === 'function') updateEngineIcon();
+                if (typeof updateCleanEngineIcon === 'function') updateCleanEngineIcon();
+            }
+        })
+        .catch(function() {}); // 拉取失败不影响正常使用
 }
 
 function getCurrentEngine() {
@@ -191,6 +211,9 @@ function toggleSelectAll() { if (window._markToggleSelectAll) window._markToggle
 
 document.addEventListener('DOMContentLoaded', () => {
     const API_URL = '/api';
+
+    // 启动时拉取全局引擎
+    fetchGlobalEngines();
 
     let currentUser = null;
     let currentUserId = null;
