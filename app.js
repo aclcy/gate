@@ -1,5 +1,5 @@
 // 当前版本号 - 每次发布时自动更新
-const CURRENT_VERSION = 'v3.2.5';
+const CURRENT_VERSION = 'v3.2.6';
 
 // 搜索引擎定义
 const DEFAULT_ENGINES = [
@@ -16,10 +16,22 @@ function getEngineIconSVG(engineId, size) {
     if (engineId === 'bookmark') {
         return '<img src="favicon.png" width="' + s + '" height="' + s + '" style="border-radius:4px" alt="Mark">';
     }
-    // 统一走全局引擎列表查找（包含内置引擎和管理员添加引擎）
+    // 1. 优先从全局引擎列表（服务端下发，含内置+管理员添加）查找
+    // 2. 找不到时从 DEFAULT_ENGINES 查找（服务端未返回时的兜底）
+    // 3. 再找不到则查用户本地自定义引擎
     try {
-        var allDynamic = (typeof GLOBAL_ENGINES !== 'undefined' ? GLOBAL_ENGINES : DEFAULT_ENGINES.filter(function(e){ return e.id !== 'bookmark'; }))
-            .concat(JSON.parse(localStorage.getItem('mark_custom_engines') || '[]'));
+        var globalList = (typeof GLOBAL_ENGINES !== 'undefined' ? GLOBAL_ENGINES : []);
+        var customList = JSON.parse(localStorage.getItem('mark_custom_engines') || '[]');
+        // 合并：全局 → 默认内置 → 用户自定义，确保任何 id 都能找到
+        var allDynamic = globalList.concat(
+            DEFAULT_ENGINES.filter(function(e) {
+                return e.id !== 'bookmark' && !globalList.some(function(g) { return g.id === e.id; });
+            })
+        ).concat(
+            customList.filter(function(e) {
+                return !globalList.some(function(g) { return g.id === e.id; });
+            })
+        );
         var cEng = allDynamic.find(function(e) { return e.id === engineId; });
         if (cEng && cEng.searchUrl) {
             var urlStr = cEng.searchUrl.replace('{q}', '');

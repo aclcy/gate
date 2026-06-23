@@ -535,11 +535,26 @@ async function initGlobalEngines() {
     try {
         const result = await pool.query("SELECT value FROM admin_settings WHERE key = 'global_engines'");
         if (result.rows.length === 0) {
+            // 首次部署：写入全套内置引擎
             await pool.query(
                 "INSERT INTO admin_settings (key, value) VALUES ('global_engines', $1) ON CONFLICT (key) DO NOTHING",
                 [JSON.stringify(DEFAULT_ENGINES_SEED)]
             );
             console.log('Default engines seeded to global_engines');
+        } else {
+            // 已有数据：检查是否缺少内置引擎，补齐到列表头部（保持原有自定义引擎不变）
+            let existing = JSON.parse(result.rows[0].value);
+            const existingIds = new Set(existing.map(e => e.id));
+            const missing = DEFAULT_ENGINES_SEED.filter(e => !existingIds.has(e.id));
+            if (missing.length > 0) {
+                // 内置引擎放最前面，原有引擎（包括自定义）追加在后
+                const merged = [...missing, ...existing];
+                await pool.query(
+                    "INSERT INTO admin_settings (key, value) VALUES ('global_engines', $1) ON CONFLICT (key) DO UPDATE SET value = $1",
+                    [JSON.stringify(merged)]
+                );
+                console.log(`Seeded ${missing.length} missing built-in engines to global_engines`);
+            }
         }
     } catch (err) {
         console.error('Failed to init global engines:', err.message);
@@ -976,6 +991,8 @@ app.get('/api/favicon/:hostname', async (req, res) => {
     const sources = [
         `https://favicon.im/${hostname}`,
         `https://icon.horse/icon/${hostname}`,
+        `https://${hostname}/favicon.ico`,
+        `https://${hostname}/favicon.png`,
     ];
 
     for (const sourceUrl of sources) {
