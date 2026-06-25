@@ -1,3 +1,65 @@
+/* ====== 主题色系变量 ====== */
+:root,
+[data-theme="white"] {
+    --theme-bg: #ffffff;
+    --theme-nav: #ffffff;
+    --theme-surface: #ffffff;
+    --theme-border: #e8e8e8;
+    --theme-text: #333333;
+    --theme-text-muted: #666666;
+    --theme-shadow: rgba(0,0,0,0.06);
+}
+
+[data-theme="warm"] {
+    --theme-bg: #faf5ef;
+    --theme-nav: #fffaf3;
+    --theme-surface: #ffffff;
+    --theme-border: #e8ddd0;
+    --theme-text: #4a3f35;
+    --theme-text-muted: #8a7f70;
+    --theme-shadow: rgba(120,90,50,0.08);
+}
+
+[data-theme="cool"] {
+    --theme-bg: #eef3f8;
+    --theme-nav: #f2f6fa;
+    --theme-surface: #ffffff;
+    --theme-border: #d0dce8;
+    --theme-text: #2c3e50;
+    --theme-text-muted: #5a7080;
+    --theme-shadow: rgba(40,80,120,0.08);
+}
+
+[data-theme="green"] {
+    --theme-bg: #eef5ee;
+    --theme-nav: #f2f8f2;
+    --theme-surface: #ffffff;
+    --theme-border: #cee0ce;
+    --theme-text: #2d4a2d;
+    --theme-text-muted: #5a7a5a;
+    --theme-shadow: rgba(40,100,40,0.08);
+}
+
+[data-theme="pink"] {
+    --theme-bg: #fdf2f6;
+    --theme-nav: #fef5f9;
+    --theme-surface: #ffffff;
+    --theme-border: #e8d0dc;
+    --theme-text: #4a2d3a;
+    --theme-text-muted: #8a6070;
+    --theme-shadow: rgba(150,50,80,0.08);
+}
+
+[data-theme="dark"] {
+    --theme-bg: #121212;
+    --theme-nav: #1a1a1a;
+    --theme-surface: #1e1e1e;
+    --theme-border: #333333;
+    --theme-text: #f0f0f0;
+    --theme-text-muted: #b8b8b8;
+    --theme-shadow: rgba(0,0,0,0.3);
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -6,7 +68,8 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    background: #f5f5f5;
+    background: var(--theme-bg);
+    color: var(--theme-text);
     height: 100vh;
     height: 100dvh;
     display: flex;
@@ -25,12 +88,12 @@ body {
 
 /* 顶部导航栏 */
 .top-nav {
-    background: #f5f5f5;
+    background: var(--theme-nav);
     padding: 12px 24px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 3px var(--theme-shadow);
     position: sticky;
     top: 0;
     z-index: 100;
@@ -49,7 +112,7 @@ body {
 }
 
 .nav-left .logo {
-    color: #333;
+    color: var(--theme-text);
     font-size: 24px;
     font-weight: bold;
 }
@@ -201,7 +264,7 @@ body {
 }
 
 .engine-item:hover {
-    background: #f5f5f5;
+    background: var(--theme-bg);
 }
 
 .engine-item.active {
@@ -275,7 +338,7 @@ body {
 }
 
 .engine-add-btn:hover {
-    background: #f5f5f5;
+    background: var(--theme-bg);
     color: #333;
 }
 
@@ -416,7 +479,7 @@ body {
 }
 
 .suggestion-footer:hover {
-    background: #f5f5f5;
+    background: var(--theme-bg);
 }
 
 .nav-right {
@@ -1041,7 +1104,7 @@ body {
 }
 
 .dropdown-item:hover {
-    background: #f5f5f5;
+    background: var(--theme-bg);
 }
 
 .dropdown-item:first-child {
@@ -1156,7 +1219,7 @@ body {
     border-radius: 4px;
     margin-right: 12px;
     flex-shrink: 0;
-    background: #f5f5f5;
+    background: var(--theme-bg);
 }
 
 .bookmark-favicon-fallback {
@@ -1384,7 +1447,7 @@ body {
 }
 
 .input-modal-btn--cancel {
-    background: #f5f5f5;
+    background: var(--theme-bg);
     color: #666;
     border: 1px solid #ddd;
 }
@@ -1966,7 +2029,7 @@ body {
 }
 
 .history-item:hover {
-    background: #f5f5f5;
+    background: var(--theme-bg);
 }
 
 .history-item-icon {
@@ -2854,7 +2917,7 @@ body {
     width: 100%;
 }
 .menu-drawer-item:hover {
-    background: #f5f5f5;
+    background: var(--theme-bg);
 }
 .menu-drawer-item svg {
     flex-shrink: 0;
@@ -3192,7 +3255,7 @@ body {
     height: calc(100vh - 56px);
     height: calc(100dvh - 56px);
     padding: 40px 20px;
-    background: #f5f0eb;
+    background: var(--theme-bg);
     overflow-y: auto;
     min-height: 0;
 }
@@ -3526,4 +3589,4 @@ body {
         width: 22px;
         height: 22px;
     }
-}
+}

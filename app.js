@@ -1,5 +1,5 @@
 // 当前版本号 - 每次发布时自动更新
-const CURRENT_VERSION = 'v3.2.8';
+const CURRENT_VERSION = 'v3.3.0';
 
 // 搜索引擎定义
 const DEFAULT_ENGINES = [
@@ -623,7 +623,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ====== 语言与主题切换 ======
     let currentLang = localStorage.getItem('mark_lang') || 'zh';
-    let currentTheme = localStorage.getItem('mark_theme') || 'light';
+    // 兼容旧版 light → white
+    let currentTheme = localStorage.getItem('mark_theme') || 'white';
+    if (currentTheme === 'light') currentTheme = 'white';
+    const THEME_LIST = ['white', 'warm', 'cool', 'green', 'pink', 'dark'];
+    const THEME_NAMES = {
+        white: '纯白', warm: '暖色', cool: '冷色',
+        green: '护眼', pink: '粉色', dark: '暗色'
+    };
 
     // 偏好管理
     async function loadPreferences() {
@@ -1115,9 +1122,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function applyTheme() {
         document.documentElement.setAttribute('data-theme', currentTheme);
         if (themeBtn) {
-            const isLight = currentTheme === 'light';
-            themeBtn.innerHTML = '<span>主题</span>';
-            themeBtn.title = isLight ? '切换暗色主题' : '切换亮色主题';
+            var name = THEME_NAMES[currentTheme] || '主题';
+            themeBtn.innerHTML = '<span>' + name + '</span>';
+            var idx = THEME_LIST.indexOf(currentTheme);
+            var nextIdx = (idx + 1) % THEME_LIST.length;
+            themeBtn.title = '当前: ' + name + ' → 点击切换为' + THEME_NAMES[THEME_LIST[nextIdx]];
         }
     }
 
@@ -1133,7 +1142,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (themeBtn) {
         themeBtn.addEventListener('click', () => {
             navMenuDropdown.classList.add('hidden');
-            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            var idx = THEME_LIST.indexOf(currentTheme);
+            currentTheme = THEME_LIST[(idx + 1) % THEME_LIST.length];
             localStorage.setItem('mark_theme', currentTheme);
             applyTheme();
         });
