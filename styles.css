@@ -1328,6 +1328,67 @@ body {
     font-size: 20px;
 }
 
+/* 主题选择器 */
+.theme-picker-content {
+    max-width: 420px;
+    padding: 24px;
+}
+
+.theme-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+}
+
+.theme-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 8px;
+    border: 2px solid var(--theme-border, #e0e0e0);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s;
+    background: var(--theme-surface, #fff);
+}
+
+.theme-option:hover {
+    border-color: #4a90d9;
+    transform: translateY(-2px);
+}
+
+.theme-option.active {
+    border-color: #4a90d9;
+    background: #e8f0fe;
+}
+
+.theme-swatch {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid rgba(0,0,0,0.08);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+}
+
+.theme-option-label {
+    font-size: 13px;
+    color: var(--theme-text, #333);
+    font-weight: 500;
+}
+
+.theme-option.active .theme-option-label {
+    color: #4a90d9;
+}
+
+[data-theme="dark"] .theme-option.active {
+    background: rgba(74,144,217,0.15);
+}
+
+[data-theme="dark"] .theme-option.active .theme-option-label {
+    color: #7ab8f5;
+}
+
 .changelog-entry {
     margin-bottom: 16px;
     border: 1px solid #e0e0e0;

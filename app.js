@@ -1,5 +1,5 @@
 // 当前版本号 - 每次发布时自动更新
-const CURRENT_VERSION = 'v3.3.0';
+const CURRENT_VERSION = 'v3.3.1';
 
 // 搜索引擎定义
 const DEFAULT_ENGINES = [
@@ -1124,10 +1124,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (themeBtn) {
             var name = THEME_NAMES[currentTheme] || '主题';
             themeBtn.innerHTML = '<span>' + name + '</span>';
-            var idx = THEME_LIST.indexOf(currentTheme);
-            var nextIdx = (idx + 1) % THEME_LIST.length;
-            themeBtn.title = '当前: ' + name + ' → 点击切换为' + THEME_NAMES[THEME_LIST[nextIdx]];
+            themeBtn.title = '选择主题';
         }
+        // 更新弹窗中的选中状态
+        document.querySelectorAll('.theme-option').forEach(function(opt) {
+            opt.classList.toggle('active', opt.dataset.theme === currentTheme);
+        });
     }
 
     if (langBtn) {
@@ -1139,13 +1141,48 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // 主题选择弹窗
+    var themePickerModal = document.getElementById('theme-picker-modal');
+    var themePickerClose = document.getElementById('theme-picker-close');
+    var themePickerGrid = document.getElementById('theme-picker-grid');
+    var THEME_SWATCHES = {
+        white: '#ffffff', warm: '#faf5ef', cool: '#eef3f8',
+        green: '#eef5ee', pink: '#fdf2f6', dark: '#1a1a1a'
+    };
+
+    // 初始化主题选项
+    if (themePickerGrid) {
+        THEME_LIST.forEach(function(t) {
+            var div = document.createElement('div');
+            div.className = 'theme-option' + (t === currentTheme ? ' active' : '');
+            div.dataset.theme = t;
+            div.innerHTML = '<div class="theme-swatch" style="background:' + THEME_SWATCHES[t] + ';"></div>' +
+                            '<span class="theme-option-label">' + THEME_NAMES[t] + '</span>';
+            div.addEventListener('click', function() {
+                currentTheme = t;
+                localStorage.setItem('mark_theme', currentTheme);
+                applyTheme();
+                themePickerModal.classList.add('hidden');
+            });
+            themePickerGrid.appendChild(div);
+        });
+    }
+
+    if (themePickerClose) {
+        themePickerClose.addEventListener('click', function() {
+            themePickerModal.classList.add('hidden');
+        });
+    }
+    if (themePickerModal) {
+        themePickerModal.addEventListener('click', function(e) {
+            if (e.target === themePickerModal) themePickerModal.classList.add('hidden');
+        });
+    }
+
     if (themeBtn) {
         themeBtn.addEventListener('click', () => {
             navMenuDropdown.classList.add('hidden');
-            var idx = THEME_LIST.indexOf(currentTheme);
-            currentTheme = THEME_LIST[(idx + 1) % THEME_LIST.length];
-            localStorage.setItem('mark_theme', currentTheme);
-            applyTheme();
+            if (themePickerModal) themePickerModal.classList.remove('hidden');
         });
     }
 

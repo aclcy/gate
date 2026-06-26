@@ -1,6 +1,6 @@
 {
   "name": "mark-bookmarks",
-  "version": "3.3.0",
+  "version": "3.3.1",
   "description": "A bookmark management application with database sync",
   "main": "server.js",
   "scripts": {

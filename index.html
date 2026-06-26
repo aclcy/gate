@@ -100,7 +100,7 @@
                     </form>
                 </div>
                 <p class="auth-copyright">© 2026 Li Chengyan. All Rights Reserved.</p>
-                                <span class="auth-version">v3.3.0</span>
+                                <span class="auth-version">v3.3.1</span>
             </div>
         </div>
 
@@ -111,7 +111,7 @@
                 <div class="nav-left">
                     <img class="nav-logo-img" src="favicon.png" alt="Mark Logo">
                     <h1 class="logo">Mark</h1>
-                    <span id="version-display" class="version-badge" title="点击查看更新日志">v3.3.0</span>
+                    <span id="version-display" class="version-badge" title="点击查看更新日志">v3.3.1</span>
                     <div class="nav-menu-wrapper">
                         <button id="nav-menu-btn" class="nav-menu-btn" title="菜单">...</button>
                         <div id="nav-menu-dropdown" class="dropdown-menu hidden">
@@ -232,6 +232,12 @@
                 <span class="close">&times;</span>
                 <div id="changelog-content">
                     <h2>更新日志</h2>
+                    <div class="changelog-entry">
+                        <h3>v3.3.1 - 2026年6月26日</h3>
+                        <ul>
+                            <li>主题切换改为弹出选择器，点击主题按钮展示所有色系选项，直接选择目标主题</li>
+                        </ul>
+                    </div>
                     <div class="changelog-entry">
                         <h3>v3.3.0 - 2026年6月25日</h3>
                         <ul>
@@ -818,6 +824,15 @@
             <div id="shares-list" class="shares-list">
                 <div class="loading">加载中...</div>
             </div>
+        </div>
+    </div>
+
+    <!-- 主题选择弹窗 -->
+    <div id="theme-picker-modal" class="modal hidden">
+        <div class="modal-content theme-picker-content">
+            <span class="close" id="theme-picker-close">&times;</span>
+            <h2>选择主题</h2>
+            <div id="theme-picker-grid" class="theme-picker-grid"></div>
         </div>
     </div>
 
