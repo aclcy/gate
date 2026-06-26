@@ -3302,10 +3302,10 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     height: calc(100vh - 56px);
     height: calc(100dvh - 56px);
-    padding: 40px 20px;
+    padding: 0 20px;
     background: var(--theme-bg);
     overflow-y: auto;
     min-height: 0;
@@ -3316,7 +3316,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    transform: translateY(-104px);
+    margin-top: calc(50dvh - 158px);
 }
 
 .clean-search-wrapper {
@@ -3576,10 +3576,10 @@ body {
     .clean-mode-view {
         height: calc(100vh - 80px);
         height: calc(100dvh - 80px);
-        padding: 20px 12px;
+        padding: 0 12px;
     }
     .clean-content-shift {
-        transform: translateY(-88px);
+        margin-top: calc(50dvh - 150px);
     }
     .clean-search-wrapper {
         max-width: 100%;
