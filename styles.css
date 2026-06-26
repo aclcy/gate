@@ -3411,6 +3411,18 @@ body {
     padding: 0 20px;
 }
 
+.clean-copyright {
+    margin-top: auto;
+    padding: 16px 20px;
+    font-size: 12px;
+    color: #999;
+    text-align: center;
+}
+
+[data-theme="dark"] .clean-copyright {
+    color: #555;
+}
+
 .clean-bookmark-item {
     display: flex;
     flex-direction: column;
