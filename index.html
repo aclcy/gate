@@ -100,7 +100,7 @@
                     </form>
                 </div>
                 <p class="auth-copyright">© 2026 Li Chengyan. All Rights Reserved.</p>
-                                <span class="auth-version">v3.3.2</span>
+                                <span class="auth-version">v3.3.3</span>
             </div>
         </div>
 
@@ -111,7 +111,7 @@
                 <div class="nav-left">
                     <img class="nav-logo-img" src="favicon.png" alt="Mark Logo">
                     <h1 class="logo">Mark</h1>
-                    <span id="version-display" class="version-badge" title="点击查看更新日志">v3.3.2</span>
+                    <span id="version-display" class="version-badge" title="点击查看更新日志">v3.3.3</span>
                     <div class="nav-menu-wrapper">
                         <button id="nav-menu-btn" class="nav-menu-btn" title="菜单">...</button>
                         <div id="theme-picker-dropdown" class="dropdown-menu theme-picker-dropdown hidden">
@@ -210,21 +210,23 @@
 
             <!-- 简洁模式 -->
             <div id="clean-mode-view" class="clean-mode-view hidden">
-                <div class="clean-search-wrapper">
-                    <div class="clean-search-bar" id="clean-search-bar">
-                        <button class="search-engine-btn" id="clean-search-engine-btn" title="切换搜索引擎"></button>
-                        <input type="text" class="search-input" id="clean-search-input" placeholder="搜索网页" autocomplete="off">
-                        <button class="search-submit-btn" id="clean-search-submit-btn" title="搜索">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="11" cy="11" r="8"/>
-                                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                            </svg>
-                        </button>
+                <div class="clean-content-shift">
+                    <div class="clean-search-wrapper">
+                        <div class="clean-search-bar" id="clean-search-bar">
+                            <button class="search-engine-btn" id="clean-search-engine-btn" title="切换搜索引擎"></button>
+                            <input type="text" class="search-input" id="clean-search-input" placeholder="搜索网页" autocomplete="off">
+                            <button class="search-submit-btn" id="clean-search-submit-btn" title="搜索">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="11" cy="11" r="8"/>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="search-engine-picker" id="clean-search-engine-picker"></div>
+                        <div class="suggestions-dropdown" id="clean-suggestions-dropdown"></div>
                     </div>
-                    <div class="search-engine-picker" id="clean-search-engine-picker"></div>
-                    <div class="suggestions-dropdown" id="clean-suggestions-dropdown"></div>
+                    <div id="clean-bookmarks-grid" class="clean-bookmarks-grid"></div>
                 </div>
-                <div id="clean-bookmarks-grid" class="clean-bookmarks-grid"></div>
             </div>
         </div>
 
@@ -234,6 +236,13 @@
                 <span class="close">&times;</span>
                 <div id="changelog-content">
                     <h2>更新日志</h2>
+                    <div class="changelog-entry">
+                        <h3>v3.3.3 - 2026年6月26日</h3>
+                        <ul>
+                            <li>修复简洁模式快捷方式未与搜索框同步上移的问题</li>
+                            <li>后台管理新增搜索引擎显示/隐藏功能，管理员可控制所有用户看到的引擎</li>
+                        </ul>
+                    </div>
                     <div class="changelog-entry">
                         <h3>v3.3.2 - 2026年6月26日</h3>
                         <ul>

@@ -3311,11 +3311,18 @@ body {
     min-height: 0;
 }
 
+.clean-content-shift {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform: translateY(-104px);
+}
+
 .clean-search-wrapper {
     width: 100%;
     max-width: 800px;
     position: relative;
-    transform: translateY(-200%);
 }
 
 .clean-search-bar {
@@ -3570,6 +3577,9 @@ body {
         height: calc(100vh - 80px);
         height: calc(100dvh - 80px);
         padding: 20px 12px;
+    }
+    .clean-content-shift {
+        transform: translateY(-88px);
     }
     .clean-search-wrapper {
         max-width: 100%;

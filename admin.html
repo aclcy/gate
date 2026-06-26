@@ -396,6 +396,10 @@
         .engine-icon-cell { display: flex; align-items: center; gap: 8px; }
         .edit-engine-btn { background: #17a2b8; color: white; }
         .edit-engine-btn:hover { background: #138496; }
+        .toggle-visible-btn { background: #28a745; color: white; font-size: 12px; }
+        .toggle-visible-btn:hover { background: #218838; }
+        .toggle-hidden-btn { background: #6c757d; color: white; font-size: 12px; }
+        .toggle-hidden-btn:hover { background: #5a6268; }
 
         /* 拖拽排序 */
         .drag-handle {
@@ -939,21 +943,27 @@
                     <th>名称</th>
                     <th>搜索地址</th>
                     <th style="width:60px;">颜色</th>
+                    <th style="width:70px;">显示</th>
                     <th>操作</th>
                 </tr></thead><tbody id="enginesTbody">`;
                 engines.forEach((eng, idx) => {
                     const isBuiltin = eng.isBuiltin ? 'true' : 'false';
                     const builtinBadge = eng.isBuiltin ? '<span class="badge-builtin">内置</span>' : '';
+                    const isVisible = eng.visible !== false;
                     const deleteBtn = eng.isBuiltin
                         ? '<button class="action-btn" style="background:#ccc;color:#888;cursor:not-allowed;" disabled title="内置引擎不可删除">删除</button>'
                         : `<button class="action-btn delete-btn" onclick="deleteGlobalEngine('${escapeHtml(eng.id)}', '${escapeHtml(eng.name)}')">删除</button>`;
                     const iconCell = eng.searchUrl ? renderEngineIcon(eng, 28) : '<span style="font-size:18px;">🔖</span>';
-                    html += `<tr draggable="true" data-id="${escapeHtml(eng.id)}" data-idx="${idx}">
+                    const toggleBtn = isVisible
+                        ? `<button class="action-btn toggle-visible-btn" onclick="toggleEngineVisibility('${escapeHtml(eng.id)}', false)" title="点击隐藏">显示中</button>`
+                        : `<button class="action-btn toggle-hidden-btn" onclick="toggleEngineVisibility('${escapeHtml(eng.id)}', true)" title="点击显示">已隐藏</button>`;
+                    html += `<tr draggable="true" data-id="${escapeHtml(eng.id)}" data-idx="${idx}"${!isVisible ? ' style="opacity:0.5;"' : ''}>
                         <td class="drag-handle" title="拖拽排序">⠿</td>
                         <td>${iconCell}</td>
                         <td>${escapeHtml(eng.name)}${builtinBadge}</td>
                         <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#888;">${escapeHtml(eng.searchUrl || '—')}</td>
                         <td><span class="engine-color-dot" style="background:${escapeHtml(eng.color||'#666')};"></span></td>
+                        <td style="text-align:center;">${toggleBtn}</td>
                         <td>
                             <button class="action-btn edit-engine-btn" onclick="openEngineModal('${escapeHtml(eng.id)}', '${escapeHtml(eng.name)}', '${escapeHtml(eng.searchUrl||'')}', '${escapeHtml(eng.color||'#666')}')">编辑</button>
                             ${deleteBtn}
@@ -1130,6 +1140,25 @@
                     loadGlobalEngines();
                 } else {
                     alert(data.error || '删除失败');
+                }
+            } catch (err) {
+                alert('网络错误');
+            }
+        }
+
+        async function toggleEngineVisibility(id, visible) {
+            if (!adminPwd) { alert('请重新登录管理后台'); return; }
+            try {
+                const res = await fetch(`/api/admin/global-engines/${id}/visibility`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: adminPwd, visible: visible })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    loadGlobalEngines();
+                } else {
+                    alert(data.error || '操作失败');
                 }
             } catch (err) {
                 alert('网络错误');

@@ -522,12 +522,12 @@ app.get('/admin', (req, res) => {
 
 // 内置引擎默认值（首次初始化时写入数据库，管理员可编辑排序但不可删除）
 const DEFAULT_ENGINES_SEED = [
-    { id: 'bookmark', name: '书签搜索', searchUrl: null,                                     color: '#2c3e50', isBuiltin: true  },
-    { id: 'bing',     name: '必应',     searchUrl: 'https://www.bing.com/search?q={q}',      color: '#008373', isBuiltin: true  },
-    { id: 'baidu',    name: '百度',     searchUrl: 'https://www.baidu.com/s?wd={q}',         color: '#2932E1', isBuiltin: false },
-    { id: 'sogou',    name: '搜狗',     searchUrl: 'https://www.sogou.com/web?query={q}',    color: '#FF4F01', isBuiltin: false },
-    { id: 'so360',    name: '360搜索',  searchUrl: 'https://www.so.com/s?q={q}',             color: '#40BA21', isBuiltin: false },
-    { id: 'metaso',   name: '秘塔AI',   searchUrl: 'https://metaso.cn/?q={q}',               color: '#6C5CE7', isBuiltin: false },
+    { id: 'bookmark', name: '书签搜索', searchUrl: null,                                     color: '#2c3e50', isBuiltin: true,  visible: true },
+    { id: 'bing',     name: '必应',     searchUrl: 'https://www.bing.com/search?q={q}',      color: '#008373', isBuiltin: true,  visible: true },
+    { id: 'baidu',    name: '百度',     searchUrl: 'https://www.baidu.com/s?wd={q}',         color: '#2932E1', isBuiltin: false, visible: true },
+    { id: 'sogou',    name: '搜狗',     searchUrl: 'https://www.sogou.com/web?query={q}',    color: '#FF4F01', isBuiltin: false, visible: true },
+    { id: 'so360',    name: '360搜索',  searchUrl: 'https://www.so.com/s?q={q}',             color: '#40BA21', isBuiltin: false, visible: true },
+    { id: 'metaso',   name: '秘塔AI',   searchUrl: 'https://metaso.cn/?q={q}',               color: '#6C5CE7', isBuiltin: false, visible: true },
 ];
 
 // 初始化全局引擎（首次部署时写入内置引擎）
@@ -551,10 +551,18 @@ async function initGlobalEngines() {
             DEFAULT_ENGINES_SEED.forEach(e => { builtinMap[e.id] = e.isBuiltin; });
             let changed = missing.length > 0;
             existing = existing.map(e => {
+                let modified = false;
+                // 同步 isBuiltin 字段
                 if (e.id in builtinMap && e.isBuiltin !== builtinMap[e.id]) {
-                    changed = true;
-                    return { ...e, isBuiltin: builtinMap[e.id] };
+                    e = { ...e, isBuiltin: builtinMap[e.id] };
+                    modified = true;
                 }
+                // 补齐 visible 字段（旧数据可能没有）
+                if (e.visible === undefined) {
+                    e = { ...e, visible: true };
+                    modified = true;
+                }
+                if (modified) changed = true;
                 return e;
             });
             if (changed) {
@@ -682,6 +690,30 @@ app.delete('/api/admin/global-engines/:id', async (req, res) => {
     } catch (err) {
         console.error('Delete global engine error:', err);
         res.status(500).json({ error: '删除失败' });
+    }
+});
+
+// 管理员接口：切换引擎显示/隐藏
+app.patch('/api/admin/global-engines/:id/visibility', async (req, res) => {
+    const { password, visible } = req.body;
+    const { id } = req.params;
+    if (!password) return res.status(400).json({ error: '缺少密码' });
+    const valid = await bcrypt.compare(password, adminPassword);
+    if (!valid) return res.status(403).json({ error: '管理员密码错误' });
+    try {
+        const result = await pool.query("SELECT value FROM admin_settings WHERE key = 'global_engines'");
+        let engines = result.rows.length > 0 ? JSON.parse(result.rows[0].value) : [];
+        const idx = engines.findIndex(e => e.id === id);
+        if (idx === -1) return res.status(404).json({ error: '引擎不存在' });
+        engines[idx].visible = !!visible;
+        await pool.query(
+            "INSERT INTO admin_settings (key, value) VALUES ('global_engines', $1) ON CONFLICT (key) DO UPDATE SET value = $1",
+            [JSON.stringify(engines)]
+        );
+        res.json({ success: true, engines });
+    } catch (err) {
+        console.error('Toggle engine visibility error:', err);
+        res.status(500).json({ error: '操作失败' });
     }
 });
 

@@ -1,5 +1,5 @@
 // 当前版本号 - 每次发布时自动更新
-const CURRENT_VERSION = 'v3.3.2';
+const CURRENT_VERSION = 'v3.3.3';
 
 // 搜索引擎定义
 const DEFAULT_ENGINES = [
@@ -161,10 +161,12 @@ function getAllEngines() {
     const base = (typeof GLOBAL_ENGINES !== 'undefined' && GLOBAL_ENGINES.length > 0)
         ? GLOBAL_ENGINES
         : DEFAULT_ENGINES;
+    // 过滤掉管理员隐藏的引擎（visible === false）
+    const visibleBase = base.filter(function(e) { return e.visible !== false; });
     // 用户自定义引擎追加到末尾（去重：不覆盖同ID的全局引擎）
-    const baseIds = new Set(base.map(function(e) { return e.id; }));
+    const baseIds = new Set(visibleBase.map(function(e) { return e.id; }));
     const uniqueCustoms = customs.filter(function(e) { return !baseIds.has(e.id); });
-    return [...base, ...uniqueCustoms];
+    return [...visibleBase, ...uniqueCustoms];
 }
 
 // 拉取全局引擎并刷新图标/选择器
@@ -185,7 +187,7 @@ function fetchGlobalEngines() {
 function getCurrentEngine() {
     const all = getAllEngines();
     const id = localStorage.getItem('mark_engine') || 'bing';
-    return all.find(e => e.id === id) || DEFAULT_ENGINES.find(e => e.id === 'bing');
+    return all.find(e => e.id === id) || all[0] || DEFAULT_ENGINES.find(e => e.id === 'bing');
 }
 
 // 文件夹 SVG 图标
