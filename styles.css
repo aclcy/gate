@@ -3356,7 +3356,7 @@ body {
     border-radius: 50%;
     padding: 0;
     margin-right: 6px;
-    opacity: .7;
+    opacity: 1;
     transition: opacity .15s;
 }
 
